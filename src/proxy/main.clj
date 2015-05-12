@@ -10,9 +10,9 @@
   [& [type port callback-base]]
   (cond
     (= type "local")
-    (local/start (or port 9999))
+    (local/start (Integer/parseInt port))
     (= type "lambda")
-    (lambda/start (or port 9998) callback-base)
+    (lambda/start (Integer/parseInt port) callback-base)
     )
 
   (loop []
