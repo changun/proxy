@@ -1,6 +1,6 @@
 # Web Proxies
 
-Web proxies for Google App Engine and local machine. 
+Web proxies with the same API on Google App Engine and local machine. 
 
 ## Deploy
 
@@ -13,8 +13,8 @@ Web proxies for Google App Engine and local machine.
 
 ## Usage
 
-* Send any requests (GET, POST, PUT, etc.) to /proxy?url={THE DESIRED URL}
-* All the headers and body will be redirected to and from the target web page.
+* Send any kind of requests (GET, POST, PUT, etc.) to /proxy?url={THE DESIRED URL}
+* The request method and the headers, as well as, request body will be redirected to and from the target web page.
 
 ## License
 
