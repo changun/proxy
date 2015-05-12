@@ -1,16 +1,12 @@
 (ns proxy.lambda
   "A AWS Lambda-based proxy"
   (:import
-
-    (java.net URL)
-    (java.util UUID Base64)
-    (java.io ByteArrayInputStream)
-    (java.nio ByteBuffer)
-    (com.fasterxml.jackson.databind.util ByteBufferBackedInputStream))
+    (java.util UUID Base64))
   (:require [cheshire.core :as json]
             [amazonica.aws.lambda :as lambda]
             [clojure.core.async :as async]
             [ring.util.codec :as codec]
+            [clojure.edn]
             )
   (:require [compojure.core :refer [defroutes routes ANY POST]]
             [compojure.handler :refer [site]]
