@@ -24,7 +24,8 @@
                  :function-name "httpRequest"
                  :invoke-args payload
                  ))
-(defn callback-url [uuid] (str "http://andy-hsieh.cloudapp.net/lambda-proxy/callback/" uuid))
+(def callback-base (atom nil))
+(defn callback-url [uuid] (str @callback-base uuid))
 (defn lambda
   "Make http request to ptt.cc via AWS Lambda"
   [method url body headers callback]
@@ -110,10 +111,11 @@
                     )
                   ))
   )
-(defn start  [port]
+(defn start  [port callback-base-url]
   (stop-server)
+  (reset! callback-base callback-base-url)
   (reset! server (run-server handler {:port port}))
-  (println "Start Lambda proxy at" port)
+  (println "Start Lambda proxy at" port " callback endpoint:" callback-base-url)
   )
 
 
