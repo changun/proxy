@@ -1,16 +1,21 @@
 (ns proxy.lambda
   "A AWS Lambda-based proxy"
   (:import
-    (java.util UUID Base64))
+    (java.util UUID Base64)
+    (org.writequit.tigris JSONStringEscapingInputStream)
+    (java.nio.charset StandardCharsets)
+    (java.io ByteArrayInputStream))
   (:require [cheshire.core :as json]
             [amazonica.aws.lambda :as lambda]
             [clojure.core.async :as async]
             [ring.util.codec :as codec]
+            [org.httpkit.timer :as timer]
             [clojure.edn]
             )
   (:require [compojure.core :refer [defroutes routes ANY POST]]
             [compojure.handler :refer [site]]
-            [compojure.route :as route])
+            [compojure.route :as route]
+            )
   (:use org.httpkit.server)
   )
 
@@ -20,10 +25,17 @@
 
 
 (defn lambda-invoke [payload]
-  (lambda/invoke-async (get-cred)
-                 :function-name "httpRequest"
-                 :invoke-args payload
-                 ))
+  (try
+    (lambda/invoke-async (get-cred)
+                         :function-name "httpRequest"
+                         :invoke-args payload
+                         )
+    (catch Exception e
+      (lambda/invoke-async (get-cred)
+                           :function-name "httpRequest"
+                           :invoke-args (ByteArrayInputStream. (.getBytes payload StandardCharsets/UTF_8))
+
+                           ))))
 (def callback-base (atom nil))
 (defn callback-url [uuid] (str @callback-base uuid))
 (defn lambda
@@ -45,6 +57,8 @@
   )
 
 (def queue (atom {}))
+
+
 (defn callback-handler [{:keys [params body headers] :as req} uuid]
   (println "CALLBACK: " {:uuid uuid :headers headers})
   (let [client-channel (get @queue uuid)
@@ -52,7 +66,7 @@
         response-status (get headers "statuscode")
         response-headers (json/parse-string (get headers "responseheaders"))
         ]
-
+    (swap! queue dissoc uuid)
     (if client-channel
       (do
         (send! client-channel {:status (Integer/parseInt response-status)
@@ -71,7 +85,6 @@
                                                   ) {} response-headers)
                                })
         (send!  lambda-channel{:status 200 :body ""})
-
         )
       (send! lambda-channel {:status 404})
       )
@@ -82,9 +95,8 @@
         uuid (.toString (UUID/randomUUID))]
     (println "PROXY: " {:uuid uuid :url url :request-method request-method :headers headers})
     (swap! queue assoc uuid (:async-channel req))
-    (async/thread
-      (lambda (name request-method) url body headers (callback-url uuid)))
-
+    (lambda (name request-method) url body headers (callback-url uuid))
+    (timer/schedule-task 10000 (swap! queue dissoc uuid))
       )
   )
 
